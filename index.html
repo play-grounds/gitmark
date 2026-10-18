@@ -207,7 +207,7 @@ function render() {
       <td class="m">${web && /github\.com/.test(web) ? `<a href="${esc(web)}/commit/${esc(commit)}" target="_blank" rel="noopener">${esc(commit.slice(0, 8))}</a>` : esc(commit.slice(0, 8))}</td>
       <td><span class="chip ${esc(chain)}">${esc(chain)}</span></td>
       <td class="m hide">${t ? (ex ? `<a href="${ex}" target="_blank" rel="noopener">${t.txid.slice(0, 8)}…:${t.vout}</a>` : `${t.txid.slice(0, 8)}…:${t.vout}`) : '—'}</td>
-      <td class="m hide"><a href="https://nostr.at/${npub(ev.pubkey)}" target="_blank" rel="noopener" title="did:nostr:${ev.pubkey}">${npub(ev.pubkey).slice(0, 12)}…</a></td>
+      <td class="m hide"><a href="https://nostr.social/${ev.pubkey}" target="_blank" rel="noopener" title="did:nostr:${ev.pubkey}">did:nostr:${ev.pubkey.slice(0, 8)}…</a></td>
     </tr>`;
   }).join('');
   $('#count').textContent = marks.size ? `${list.length} of ${marks.size} mark${marks.size === 1 ? '' : 's'}` : '';
@@ -226,7 +226,7 @@ async function showDetail(key) {
   d.innerHTML = `
     <div class="dh"><h2>${esc(tag(ev, 'name') || tag(ev, 'd'))}</h2><span class="chip ${esc(chain)}">${esc(chain)}</span><span class="x" id="close">close ×</span></div>
     <div class="kv">
-      <b>agent</b><span class="m">did:nostr:${ev.pubkey} · <a href="https://nostr.at/${npub(ev.pubkey)}" target="_blank" rel="noopener">${npub(ev.pubkey)}</a></span>
+      <b>agent</b><span class="m"><a href="https://nostr.social/${ev.pubkey}" target="_blank" rel="noopener">did:nostr:${ev.pubkey}</a></span>
       <b>base address</b><span class="m">${taproot(ev.pubkey, chain)}</span>
       <b>repo</b><span class="m">${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web)}</a>` : '—'} <span class="ago">(${esc(branch)})</span></span>
       <b>latest mark</b><span class="m">${esc(tag(ev, 'commit') || '')}</span>
