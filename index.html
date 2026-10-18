@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gitmark console</title>
+<meta name="description" content="Every git mark announced to Nostr, checked in your browser and shown as it lands: repo, commit, chain, coin.">
+<meta name="theme-color" content="#fbfaf7">
+<link rel="canonical" href="https://play-grounds.github.io/gitmark/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="gitmark">
+<meta property="og:title" content="gitmark console">
+<meta property="og:description" content="Every git mark announced to Nostr, checked in your browser and shown as it lands: repo, commit, chain, coin.">
+<meta property="og:url" content="https://play-grounds.github.io/gitmark/">
+<meta property="og:image" content="https://play-grounds.github.io/gitmark/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="gitmark console">
+<meta name="twitter:description" content="Every git mark announced to Nostr, checked in your browser and shown as it lands.">
+<meta name="twitter:image" content="https://play-grounds.github.io/gitmark/og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23e8830c'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23fbfaf7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfaf7; --bg2:#ffffff; --bd:#ebe7df; --bd2:#d9d3c7;
+    --fg:#1a1a1f; --mut:#6b6f7a; --dim:#9a9ea8;
+    --ac:#e8830c; --ac2:#c96d00; --gold:#f2b544;
+    --good:#1a7f37; --bad:#cf222e; --info:#0969da;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{color-scheme:light}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(900px 500px at 50% -10%, rgba(232,131,12,.12), transparent 60%),
+               radial-gradient(700px 400px at 100% 100%, rgba(9,105,218,.05), transparent 60%);}
+  a{color:var(--ac2);text-decoration:none}a:hover{text-decoration:underline}
+  .wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 20px}
+  nav .wrap{display:flex;align-items:center;gap:1.2rem;height:60px}
+  .brand{font-weight:800;letter-spacing:-.4px;color:var(--fg);margin-right:auto;display:flex;align-items:center;gap:.55rem}
+  .brand i{width:10px;height:10px;border-radius:50%;background:conic-gradient(from 200deg,var(--ac),var(--gold),var(--ac));box-shadow:0 0 10px rgba(232,131,12,.5)}
+  nav a.l{color:var(--mut);font-size:.88rem;font-weight:500}nav a.l:hover{color:var(--fg);text-decoration:none}
+  header{padding:2.2rem 0 .6rem;text-align:center}
+  h1{font-size:clamp(1.9rem,5vw,2.8rem);line-height:1.05;letter-spacing:-1.4px;margin:0;font-weight:800}
+  h1 em{font-style:normal;background:linear-gradient(90deg,var(--ac),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--mut);margin:.7rem auto 0;max-width:36rem;font-size:1rem}
+  .bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:1.4rem 0 1rem}
+  .bar input,.bar select{font:inherit;font-size:.92rem;padding:.5rem .7rem;border:1px solid var(--bd2);border-radius:10px;background:var(--bg2);color:var(--fg);outline:none}
+  .bar input{flex:1;min-width:220px;font-family:var(--mono);font-size:.84rem}
+  .bar input:focus,.bar select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(232,131,12,.15)}
+  .count{color:var(--mut);font-size:.86rem;margin-left:auto}
+  .card{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;box-shadow:0 8px 30px rgba(26,26,31,.05);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th{text-align:left;font-weight:600;color:var(--mut);font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;padding:.7rem .9rem;border-bottom:1px solid var(--bd);background:#fdfcfa}
+  td{padding:.62rem .9rem;border-bottom:1px solid var(--bd);vertical-align:middle;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  tbody tr{cursor:pointer;transition:background .12s}tbody tr:hover{background:#fff8ef}tbody tr.sel{background:#fff3e2}
+  .m{font-family:var(--mono);font-size:.82rem}
+  .chip{display:inline-block;padding:.1rem .5rem;border-radius:999px;font-size:.74rem;font-weight:600;border:1px solid var(--bd2);background:var(--bg);color:var(--mut)}
+  .chip.txbt4,.chip.xbt{border-color:#f2d2ad;background:#fff4e6;color:var(--ac2)}
+  .chip.btc{border-color:#bfe0c8;background:#eaf7ee;color:var(--good)}
+  .repo{font-weight:600}
+  .ago{color:var(--mut)}
+  .empty{padding:2.2rem 1rem;text-align:center;color:var(--mut)}
+  .empty .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px;margin-right:.5rem}
+  @keyframes s{to{transform:rotate(360deg)}}
+  /* detail */
+  .detail{margin-top:1rem;display:none}
+  .detail.on{display:block}
+  .dh{display:flex;align-items:baseline;gap:.8rem;flex-wrap:wrap;padding:1rem 1.1rem .4rem}
+  .dh h2{margin:0;font-size:1.25rem;letter-spacing:-.4px}
+  .dh .x{margin-left:auto;color:var(--mut);cursor:pointer;font-size:.86rem}
+  .kv{display:grid;grid-template-columns:max-content 1fr;gap:.3rem 1rem;padding:.4rem 1.1rem 1rem;font-size:.9rem}
+  .kv b{color:var(--mut);font-weight:500}
+  .kv .m{word-break:break-all;white-space:normal}
+  .trail{border-top:1px solid var(--bd);padding:.8rem 1.1rem 1rem}
+  .trail h3{margin:0 0 .5rem;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+  .trail ol{margin:0;padding-left:1.4rem;font-size:.88rem}
+  .trail li{margin:.15rem 0}
+  .ok{color:var(--good)}.bad{color:var(--bad)}.info{color:var(--info)}
+  /* status */
+  .status{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:1.2rem 0 2.5rem;font-size:.8rem;color:var(--mut)}
+  .rl{display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .6rem;border:1px solid var(--bd);border-radius:999px;background:var(--bg2);font-family:var(--mono);font-size:.74rem}
+  .rl i{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+  .rl.ok i{background:var(--good)}.rl.bad i{background:var(--bad)}.rl.wait i{background:var(--gold)}
+  footer{color:var(--dim);font-size:.8rem;padding:0 0 2.5rem}
+  @media (max-width:720px){ td.hide,th.hide{display:none} .wrap{padding:0 16px} }
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="brand" href="./"><i></i>gitmark</a>
+  <a class="l" href="https://git-mark.com">git-mark.com</a>
+  <a class="l" href="https://play-grounds.github.io/ngit/">ngit</a>
+  <a class="l" href="https://bitcoin-kernel.com/utxo/">utxo</a>
+</div></nav>
+
+<div class="wrap">
+<header>
+  <h1>Marks, <em>as they land</em></h1>
+  <p class="sub">Every <code>git mark</code> announced to Nostr. Each event's id and signature are checked here in your browser before it is shown.</p>
+</header>
+
+<div class="bar">
+  <select id="chain" aria-label="Chain">
+    <option value="">all chains</option>
+    <option value="txbt4">txbt4 · BLAKE2b testnet4</option>
+    <option value="xbt">xbt · BLAKE2b</option>
+    <option value="tbtc4">tbtc4 · testnet4</option>
+    <option value="signet">signet</option>
+    <option value="btc">btc</option>
+  </select>
+  <input id="q" placeholder="repo, pubkey, npub or did:nostr" aria-label="Filter">
+  <span class="count" id="count"></span>
+</div>
+
+<div class="card">
+<table>
+  <thead><tr><th>When</th><th>Repo</th><th>Commit</th><th>Chain</th><th class="hide">Coin</th><th class="hide">Agent</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<div class="empty" id="empty"><span class="spin"></span>listening on the relays…</div>
+</div>
+
+<section class="card detail" id="detail"></section>
+
+<div class="status" id="status"><span>relays:</span></div>
+<footer>Read-only. Events are NIP-34 repository announcements (kind 30617) carrying <code>chain</code>, <code>txo</code> and <code>commit</code> tags, as <a href="https://git-mark.com">git mark announce</a> publishes them. Nothing is sent from this page.</footer>
+</div>
+
+<script type="module">
+import { schnorr } from 'https://cdn.jsdelivr.net/npm/@noble/curves@1.4.0/secp256k1/+esm';
+import { sha256 } from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.4.0/sha256/+esm';
+
+const RELAYS = ['wss://nostr.oxtr.dev', 'wss://relay.primal.net', 'wss://relay.snort.social', 'wss://relay.damus.io'];
+// web: the explorer page for a tx. api: an esplora-style API a browser may read (CORS). mempool.guide sends the
+// Access-Control-Allow-Origin header twice, which browsers reject, so txbt4 has a page but no readable API here.
+const EXPLORER = {
+  txbt4: { web: 'https://mempool.guide/testnet4', api: null },
+  xbt:   { web: 'https://mempool.kilombino.com', api: 'https://mempool.kilombino.com/api' },
+  tbtc4: { web: 'https://mempool.space/testnet4', api: 'https://mempool.space/testnet4/api' },
+  tbtc3: { web: 'https://mempool.space/testnet', api: 'https://mempool.space/testnet/api' },
+  btc:   { web: 'https://mempool.space', api: 'https://mempool.space/api' },
+  signet:{ web: 'https://mempool.space/signet', api: 'https://mempool.space/signet/api' },
+};
+const HRP = { txbt4: 'tb', xbt: 'bc', tbtc4: 'tb', tbtc3: 'tb', btc: 'bc', signet: 'tb' };
+
+const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+const $ = (s) => document.querySelector(s);
+
+// --- bech32 / bech32m (BIP173 / BIP350), enough for npub and a taproot address
+const CS = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+const polymod = (v) => { let c = 1; for (const d of v) { const b = c >> 25; c = ((c & 0x1ffffff) << 5) ^ d; for (let i = 0; i < 5; i++) if ((b >> i) & 1) c ^= [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3][i]; } return c; };
+const hrpExpand = (h) => [...[...h].map((c) => c.charCodeAt(0) >> 5), 0, ...[...h].map((c) => c.charCodeAt(0) & 31)];
+const toWords = (bytes) => { const out = []; let acc = 0, bits = 0; for (const b of bytes) { acc = (acc << 8) | b; bits += 8; while (bits >= 5) { bits -= 5; out.push((acc >> bits) & 31); } } if (bits) out.push((acc << (5 - bits)) & 31); return out; };
+function bech32(hrp, words, m) { const c = polymod([...hrpExpand(hrp), ...words, 0, 0, 0, 0, 0, 0]) ^ (m ? 0x2bc830a3 : 1); const cs = []; for (let i = 0; i < 6; i++) cs.push((c >> (5 * (5 - i))) & 31); return hrp + '1' + [...words, ...cs].map((w) => CS[w]).join(''); }
+const fromHex = (h) => Uint8Array.from(h.match(/../g), (x) => parseInt(x, 16));
+const npub = (pk) => bech32('npub', toWords(fromHex(pk)), false);
+const taproot = (pk, chain) => bech32(HRP[chain] || 'tb', [1, ...toWords(fromHex(pk))], true);
+
+// --- NIP-01 verification
+function verify(ev) {
+  try {
+    if (ev.kind !== 30617 || !/^[0-9a-f]{64}$/.test(ev.pubkey) || !/^[0-9a-f]{64}$/.test(ev.id)) return false;
+    const ser = JSON.stringify([0, ev.pubkey, ev.created_at, ev.kind, ev.tags, ev.content]);
+    if (hex(sha256(new TextEncoder().encode(ser))) !== ev.id) return false;
+    return schnorr.verify(ev.sig, ev.id, ev.pubkey);
+  } catch { return false; }
+}
+const tag = (ev, n) => (ev.tags.find((t) => t[0] === n) || [])[1];
+
+// --- state
+const marks = new Map();   // pubkey:d -> newest verified event with a chain tag
+const relayState = {};
+let selected = null;
+
+function parseTxo(u) { const m = String(u || '').match(/^txo:([a-z0-9]+):([0-9a-f]{64}):(\d+)/i); return m ? { chain: m[1], txid: m[2].toLowerCase(), vout: +m[3] } : null; }
+function webUrl(ev) { const w = tag(ev, 'web'); if (w) return w; const c = ev.tags.find((t) => t[0] === 'clone' && /^https:/.test(t[1])); return c ? c[1].replace(/\.git$/, '') : null; }
+function branchOf(ev) { const h = tag(ev, 'HEAD') || ''; return h.replace(/^ref: refs\/heads\//, '') || null; }
+
+function ago(ts) { const s = Math.max(0, Math.floor(Date.now() / 1000 - ts)); if (s < 60) return `${s}s ago`; if (s < 3600) return `${Math.floor(s / 60)}m ago`; if (s < 86400) return `${Math.floor(s / 3600)}h ago`; return `${Math.floor(s / 86400)}d ago`; }
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function filtered() {
+  const chain = $('#chain').value, q = $('#q').value.trim().toLowerCase();
+  return [...marks.values()].filter((ev) => {
+    if (chain && tag(ev, 'chain') !== chain) return false;
+    if (!q) return true;
+    const hay = [tag(ev, 'name'), tag(ev, 'd'), ev.pubkey, npub(ev.pubkey), 'did:nostr:' + ev.pubkey, webUrl(ev)].join(' ').toLowerCase();
+    return hay.includes(q);
+  }).sort((a, b) => b.created_at - a.created_at);
+}
+
+function render() {
+  const list = filtered();
+  $('#rows').innerHTML = list.map((ev) => {
+    const chain = tag(ev, 'chain'), t = parseTxo(tag(ev, 'txo')), commit = tag(ev, 'commit') || '', web = webUrl(ev);
+    const key = ev.pubkey + ':' + (tag(ev, 'd') || '');
+    const ex = t && EXPLORER[chain] ? `${EXPLORER[chain].web}/tx/${t.txid}` : null;
+    return `<tr data-k="${esc(key)}" class="${selected === key ? 'sel' : ''}">
+      <td class="ago" title="${new Date(ev.created_at * 1000).toLocaleString()}">${ago(ev.created_at)}</td>
+      <td class="repo">${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(tag(ev, 'name') || tag(ev, 'd'))}</a>` : esc(tag(ev, 'name') || tag(ev, 'd') || '?')}</td>
+      <td class="m">${web && /github\.com/.test(web) ? `<a href="${esc(web)}/commit/${esc(commit)}" target="_blank" rel="noopener">${esc(commit.slice(0, 8))}</a>` : esc(commit.slice(0, 8))}</td>
+      <td><span class="chip ${esc(chain)}">${esc(chain)}</span></td>
+      <td class="m hide">${t ? (ex ? `<a href="${ex}" target="_blank" rel="noopener">${t.txid.slice(0, 8)}…:${t.vout}</a>` : `${t.txid.slice(0, 8)}…:${t.vout}`) : '—'}</td>
+      <td class="m hide"><a href="https://nostr.at/${npub(ev.pubkey)}" target="_blank" rel="noopener" title="did:nostr:${ev.pubkey}">${npub(ev.pubkey).slice(0, 12)}…</a></td>
+    </tr>`;
+  }).join('');
+  $('#count').textContent = marks.size ? `${list.length} of ${marks.size} mark${marks.size === 1 ? '' : 's'}` : '';
+  const anyRelay = Object.values(relayState).some((r) => r.state === 'ok' || r.state === 'bad');
+  $('#empty').innerHTML = marks.size ? (list.length ? '' : 'nothing matches') : (anyRelay && Object.values(relayState).every((r) => r.state !== 'wait') ? 'no marks on these relays yet' : '<span class="spin"></span>listening on the relays…');
+  $('#empty').style.display = $('#empty').innerHTML ? '' : 'none';
+}
+
+// --- detail: the agent, its base address, and the trail from the repo's blocktrails.json
+async function showDetail(key) {
+  const ev = marks.get(key); if (!ev) return;
+  selected = key; render();
+  const chain = tag(ev, 'chain'), t = parseTxo(tag(ev, 'txo')), web = webUrl(ev), branch = branchOf(ev) || 'main';
+  const d = $('#detail'); d.classList.add('on');
+  const ex = (EXPLORER[chain] || {}).web || '', api = (EXPLORER[chain] || {}).api;
+  d.innerHTML = `
+    <div class="dh"><h2>${esc(tag(ev, 'name') || tag(ev, 'd'))}</h2><span class="chip ${esc(chain)}">${esc(chain)}</span><span class="x" id="close">close ×</span></div>
+    <div class="kv">
+      <b>agent</b><span class="m">did:nostr:${ev.pubkey} · <a href="https://nostr.at/${npub(ev.pubkey)}" target="_blank" rel="noopener">${npub(ev.pubkey)}</a></span>
+      <b>base address</b><span class="m">${taproot(ev.pubkey, chain)}</span>
+      <b>repo</b><span class="m">${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web)}</a>` : '—'} <span class="ago">(${esc(branch)})</span></span>
+      <b>latest mark</b><span class="m">${esc(tag(ev, 'commit') || '')}</span>
+      <b>coin</b><span class="m" id="coin">${t ? `<a href="${ex}/tx/${t.txid}" target="_blank" rel="noopener">txo:${chain}:${t.txid}:${t.vout}</a> <span class="ago">${api ? 'looking up…' : 'amount and state on the explorer; its API is not readable from a browser'}</span>` : '—'}</span>
+      <b>announced</b><span>${new Date(ev.created_at * 1000).toLocaleString()} · <span class="m">${ev.id.slice(0, 16)}…</span> <span class="ok">signature ok</span></span>
+    </div>
+    <div class="trail" id="trail"><h3>Trail</h3><span class="ago">${web ? 'fetching blocktrails.json…' : 'no repo URL in the announcement'}</span></div>`;
+  $('#close').onclick = () => { selected = null; d.classList.remove('on'); render(); };
+  if (t && api) {
+    const link = `<a href="${ex}/tx/${t.txid}" target="_blank" rel="noopener">txo:${chain}:${t.txid}:${t.vout}</a>`;
+    try {
+      const tx = await fetch(`${api}/tx/${t.txid}`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+      // outspend is not on every explorer; when it is missing the coin is shown without a spent flag
+      const sp = await fetch(`${api}/tx/${t.txid}/outspend/${t.vout}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const out = tx.vout[t.vout];
+      $('#coin').innerHTML = `${link} · ${out.value.toLocaleString()} sats · ${tx.status.confirmed ? `<span class="ok">confirmed</span>` : `<span class="info">unconfirmed</span>`}${sp && sp.spent ? ` · <span class="bad">spent</span>` : ''} <span class="ago">at ${out.scriptpubkey_address}</span>`;
+    } catch (e) { $('#coin').innerHTML = `${link} <span class="bad">explorer unreachable (${esc(e.message)})</span>`; }
+  }
+  if (web) {
+    const gh = web.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)/);
+    const raw = gh ? `https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/${branch}/blocktrails.json` : null;
+    if (!raw) { $('#trail').innerHTML = '<h3>Trail</h3><span class="ago">trail file only read from GitHub repos</span>'; return; }
+    try {
+      const tr = await fetch(raw).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+      const items = (tr.txo || []).map((u, i) => { const p = parseTxo(u); const c = (tr.states || [])[i] || ''; return `<li><span class="m">${esc(c.slice(0, 8))}</span> → ${p ? `<a class="m" href="${ex}/tx/${p.txid}" target="_blank" rel="noopener">${p.txid.slice(0, 12)}…:${p.vout}</a>` : esc(u)}</li>`; });
+      $('#trail').innerHTML = `<h3>Trail · ${items.length} mark${items.length === 1 ? '' : 's'} · <a href="${raw}" target="_blank" rel="noopener">blocktrails.json</a></h3>${items.length ? `<ol>${items.join('')}</ol>` : '<span class="ago">empty</span>'}`;
+    } catch (e) { $('#trail').innerHTML = `<h3>Trail</h3><span class="ago">blocktrails.json not readable at ${esc(raw)} (${esc(e.message)})</span>`; }
+  }
+}
+
+// --- relays
+function renderStatus() {
+  $('#status').innerHTML = '<span>relays:</span>' + RELAYS.map((r) => { const s = relayState[r] || { state: 'wait', n: 0 }; return `<span class="rl ${s.state}" title="${esc(s.msg || '')}"><i></i>${r.replace('wss://', '')}${s.n ? ` · ${s.n}` : ''}</span>`; }).join('');
+}
+function connect(url) {
+  relayState[url] = { state: 'wait', n: 0 }; renderStatus();
+  let ws;
+  try { ws = new WebSocket(url); } catch (e) { relayState[url] = { state: 'bad', n: 0, msg: e.message }; renderStatus(); return; }
+  const sub = 'gm' + Math.random().toString(36).slice(2, 8);
+  ws.onopen = () => ws.send(JSON.stringify(['REQ', sub, { kinds: [30617], limit: 400 }]));
+  ws.onmessage = (m) => {
+    let msg; try { msg = JSON.parse(m.data); } catch { return; }
+    if (msg[0] === 'EVENT' && msg[1] === sub) {
+      const ev = msg[2]; if (!tag(ev, 'chain') || !tag(ev, 'txo') || !verify(ev)) return;
+      const key = ev.pubkey + ':' + (tag(ev, 'd') || '');
+      const cur = marks.get(key);
+      if (!cur || cur.created_at < ev.created_at) marks.set(key, ev);
+      relayState[url].n++; relayState[url].state = 'ok'; renderStatus(); render();
+    } else if (msg[0] === 'EOSE') { relayState[url].state = 'ok'; renderStatus(); render(); }
+    else if (msg[0] === 'NOTICE' || msg[0] === 'CLOSED') { relayState[url] = { ...relayState[url], state: 'bad', msg: String(msg[msg.length - 1]) }; renderStatus(); render(); }
+  };
+  ws.onerror = () => { if (relayState[url].state !== 'ok') { relayState[url].state = 'bad'; relayState[url].msg = 'connection failed'; } renderStatus(); render(); };
+  ws.onclose = () => { if (relayState[url].state === 'wait') { relayState[url].state = 'bad'; relayState[url].msg = 'closed'; } renderStatus(); render(); setTimeout(() => connect(url), 30000); };
+}
+
+// --- wiring
+const qs = new URLSearchParams(location.search);
+if (qs.get('chain')) $('#chain').value = qs.get('chain');
+$('#q').value = qs.get('pubkey') || qs.get('q') || '';
+function syncUrl() { const p = new URLSearchParams(); if ($('#chain').value) p.set('chain', $('#chain').value); if ($('#q').value.trim()) p.set('q', $('#q').value.trim()); history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '')); }
+$('#chain').onchange = () => { syncUrl(); render(); };
+$('#q').oninput = () => { syncUrl(); render(); };
+$('#rows').onclick = (e) => { const tr = e.target.closest('tr'); if (tr && !e.target.closest('a')) showDetail(tr.dataset.k); };
+setInterval(render, 30000);
+RELAYS.forEach(connect);
+render(); renderStatus();
+</script>
+</body>
+</html>
