@@ -179,6 +179,23 @@ const relayState = {};
 let selected = null;
 
 function parseTxo(u) { const m = String(u || '').match(/^txo:([a-z0-9]+):([0-9a-f]{64}):(\d+)/i); return m ? { chain: m[1], txid: m[2].toLowerCase(), vout: +m[3] } : null; }
+// Every mirror the agent vouches for: each web tag value, plus https clone URLs without .git, deduplicated
+function mirrors(ev) {
+  const out = [];
+  for (const t of ev.tags) {
+    if (t[0] === 'web') for (const v of t.slice(1)) if (/^https?:/.test(v) && !out.includes(v)) out.push(v);
+  }
+  for (const t of ev.tags) {
+    if (t[0] === 'clone' && /^https:/.test(t[1])) { const v = t[1].replace(/\.git$/, ''); if (!out.includes(v)) out.push(v); }
+  }
+  return out;
+}
+const hostOf = (u) => { try { return new URL(u).host; } catch { return u; } };
+// Where a mirror would serve the trail document: GitHub raw for github.com, <mirror>/blocktrails.json elsewhere (the forge serves it with CORS)
+function trailUrlOf(mirror, branch) {
+  const gh = mirror.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)/);
+  return gh ? `https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/${branch}/blocktrails.json` : `${mirror.replace(/\/$/, '')}/blocktrails.json`;
+}
 function webUrl(ev) { const w = tag(ev, 'web'); if (w) return w; const c = ev.tags.find((t) => t[0] === 'clone' && /^https:/.test(t[1])); return c ? c[1].replace(/\.git$/, '') : null; }
 function branchOf(ev) { const h = tag(ev, 'HEAD') || ''; return h.replace(/^ref: refs\/heads\//, '') || null; }
 
@@ -228,12 +245,12 @@ async function showDetail(key) {
     <div class="kv">
       <b>agent</b><span class="m"><a href="https://nostr.social/${ev.pubkey}" target="_blank" rel="noopener">did:nostr:${ev.pubkey}</a></span>
       <b>base address</b><span class="m">${taproot(ev.pubkey, chain)}</span>
-      <b>repo</b><span class="m">${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web)}</a>` : '—'} <span class="ago">(${esc(branch)})</span></span>
+      <b>mirrors</b><span class="m">${mirrors(ev).length ? mirrors(ev).map((m) => `<a href="${esc(m)}" target="_blank" rel="noopener">${esc(m)}</a> <span class="ago">${esc(hostOf(m))}</span>`).join('<br>') : '—'} <span class="ago">(${esc(branch)})</span></span>
       <b>latest mark</b><span class="m">${esc(tag(ev, 'commit') || '')}</span>
       <b>coin</b><span class="m" id="coin">${t ? `<a href="${ex}/tx/${t.txid}" target="_blank" rel="noopener">txo:${chain}:${t.txid}:${t.vout}</a> <span class="ago">${api ? 'looking up…' : 'amount and state on the explorer; its API is not readable from a browser'}</span>` : '—'}</span>
       <b>announced</b><span>${new Date(ev.created_at * 1000).toLocaleString()} · <span class="m">${ev.id.slice(0, 16)}…</span> <span class="ok">signature ok</span></span>
     </div>
-    <div class="trail" id="trail"><h3>Trail</h3><span class="ago">${web ? 'fetching blocktrails.json…' : 'no repo URL in the announcement'}</span></div>`;
+    <div class="trail" id="trail"><h3>Trail</h3><span class="ago">${mirrors(ev).length ? 'fetching blocktrails.json…' : 'no mirror in the announcement'}</span></div>`;
   $('#close').onclick = () => { selected = null; d.classList.remove('on'); render(); };
   if (t && api) {
     const link = `<a href="${ex}/tx/${t.txid}" target="_blank" rel="noopener">txo:${chain}:${t.txid}:${t.vout}</a>`;
@@ -245,15 +262,19 @@ async function showDetail(key) {
       $('#coin').innerHTML = `${link} · ${out.value.toLocaleString()} sats · ${tx.status.confirmed ? `<span class="ok">confirmed</span>` : `<span class="info">unconfirmed</span>`}${sp && sp.spent ? ` · <span class="bad">spent</span>` : ''} <span class="ago">at ${out.scriptpubkey_address}</span>`;
     } catch (e) { $('#coin').innerHTML = `${link} <span class="bad">explorer unreachable (${esc(e.message)})</span>`; }
   }
-  if (web) {
-    const gh = web.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)/);
-    const raw = gh ? `https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/${branch}/blocktrails.json` : null;
-    if (!raw) { $('#trail').innerHTML = '<h3>Trail</h3><span class="ago">trail file only read from GitHub repos</span>'; return; }
+  const list = mirrors(ev);
+  if (list.length) {
+    // the first mirror that serves the trail document wins
+    let raw = null, tr = null; const tried = [];
+    for (const m of list) {
+      const u = trailUrlOf(m, branch);
+      try { tr = await fetch(u).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }); raw = u; break; } catch (e) { tried.push(`${hostOf(m)} ${e.message}`); }
+    }
+    if (!tr) { $('#trail').innerHTML = `<h3>Trail</h3><span class="ago">blocktrails.json not readable from any mirror (${esc(tried.join(', '))})</span>`; return; }
     try {
-      const tr = await fetch(raw).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
       const items = (tr.txo || []).map((u, i) => { const p = parseTxo(u); const c = (tr.states || [])[i] || ''; return `<li><span class="m">${esc(c.slice(0, 8))}</span> → ${p ? `<a class="m" href="${ex}/tx/${p.txid}" target="_blank" rel="noopener">${p.txid.slice(0, 12)}…:${p.vout}</a>` : esc(u)}</li>`; });
       $('#trail').innerHTML = `<h3>Trail · ${items.length} mark${items.length === 1 ? '' : 's'} · <a href="${raw}" target="_blank" rel="noopener">blocktrails.json</a></h3>${items.length ? `<ol>${items.join('')}</ol>` : '<span class="ago">empty</span>'}`;
-    } catch (e) { $('#trail').innerHTML = `<h3>Trail</h3><span class="ago">blocktrails.json not readable at ${esc(raw)} (${esc(e.message)})</span>`; }
+    } catch (e) { $('#trail').innerHTML = `<h3>Trail</h3><span class="ago">trail document at ${esc(raw)} could not be shown (${esc(e.message)})</span>`; }
   }
 }
 
